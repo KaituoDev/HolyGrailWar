@@ -1,5 +1,7 @@
 api-version: 1.13
-name: MyGame
-main: fun.kaituo.gametemplate.GameTemplate
+name: HolyGrailWar
+main: fun.kaituo.holygrailwar.HolyGrailWar
+authors:
+  - mn_yinduan
 version: 2.0
 depend: [GameUtils]

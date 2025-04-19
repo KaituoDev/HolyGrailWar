@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>fun.kaituo.gametemplate</groupId>
-    <artifactId>GameTemplate</artifactId>
+    <groupId>fun.kaituo.holygrailwar</groupId>
+    <artifactId>HolyGrailWar</artifactId>
     <version>2.0</version>
     <packaging>jar</packaging>
 
-    <name>GameTemplate</name>
+    <name>HolyGrailWar</name>
 
     <properties>
         <java.version>21</java.version>
