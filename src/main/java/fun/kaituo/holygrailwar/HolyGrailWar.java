@@ -1,6 +1,7 @@
 package fun.kaituo.holygrailwar;
 
 import fun.kaituo.gameutils.GameUtils;
+import fun.kaituo.holygrailwar.state.ReadyState;
 import fun.kaituo.holygrailwar.state.WaitingState;
 import fun.kaituo.gameutils.game.Game;
 import lombok.Getter;
@@ -34,6 +35,7 @@ public class HolyGrailWar extends Game {
 
     private void initStates(){
         WaitingState.INST.init();
+        ReadyState.INST.init();
     }
 
     @Override
@@ -64,7 +66,6 @@ public class HolyGrailWar extends Game {
         super.onEnable();
 
         instance = this;
-        setState(new WaitingState());
         updateExtraInfo("§e圣杯战争", getLoc("lobby"));
         Bukkit.getScheduler().runTaskLater(this, () -> {
             initStates();
