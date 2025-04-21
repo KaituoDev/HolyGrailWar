@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class BerserkerSign extends AbstractSignListener {
     @Getter
-    private boolean BerserkerActive = true;
+    private static boolean BerserkerActive = true;
     public BerserkerSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Berserker:");

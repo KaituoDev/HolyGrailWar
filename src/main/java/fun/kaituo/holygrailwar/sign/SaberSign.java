@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class SaberSign extends AbstractSignListener {
     @Getter
-    private boolean SaberActive = true;
+    private static boolean SaberActive = true;
     public SaberSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Saber:");

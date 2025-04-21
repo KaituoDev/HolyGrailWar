@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class LancerSign extends AbstractSignListener {
     @Getter
-    private boolean LancerActive = true;
+    private static boolean LancerActive = true;
     public LancerSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Lancer:");

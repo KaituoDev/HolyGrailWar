@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class CasterSign extends AbstractSignListener {
     @Getter
-    private boolean CasterActive = true;
+    private static boolean CasterActive = true;
     public CasterSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Caster:");

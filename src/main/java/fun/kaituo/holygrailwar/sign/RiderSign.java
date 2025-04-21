@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class RiderSign extends AbstractSignListener {
     @Getter
-    private boolean RiderActive = true;
+    private static boolean RiderActive = true;
     public RiderSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Rider:");

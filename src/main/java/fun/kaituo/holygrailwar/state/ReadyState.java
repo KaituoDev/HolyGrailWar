@@ -13,7 +13,7 @@ import java.util.Set;
 
 public class ReadyState implements GameState {
 
-    public static final int COUNTDOWN_SECONDS = 10;
+    public static final int COUNTDOWN_SECONDS = 5;
     public static final ReadyState INST = new ReadyState();
     private ReadyState() {}
     private Set<Integer> taskIds = new HashSet<>();
@@ -25,20 +25,18 @@ public class ReadyState implements GameState {
     }
     @Override
     public void enter() {
-        Bukkit.broadcastMessage("1");
         for (Player p : game.getPlayers()) {
             addPlayer(p);
         }
-//        taskIds.add(Bukkit.getScheduler().runTaskLater(game, () -> {
-//            game.setState(WaitingState.INST);
-//        }, COUNTDOWN_SECONDS * 20).getTaskId());
+        taskIds.add(Bukkit.getScheduler().runTaskLater(game, () -> {
+            game.setState(FightState.INST);
+        }, COUNTDOWN_SECONDS * 20).getTaskId());
     }
 
 
 
     @Override
     public void exit() {
-
     }
 
     @Override

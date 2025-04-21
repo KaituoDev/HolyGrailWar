@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class AssassinSign extends AbstractSignListener {
     @Getter
-    private boolean AssassinActive = true;
+    private static boolean AssassinActive = true;
     public AssassinSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Assassin:");

@@ -8,7 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class ArcherSign extends AbstractSignListener {
     @Getter
-    private boolean ArcherActive = true;
+    private static boolean ArcherActive = true;
     public ArcherSign(JavaPlugin plugin, Location location) {
         super(plugin, location);
         lines.set(1,"Archer:");

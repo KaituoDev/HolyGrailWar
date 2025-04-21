@@ -1,6 +1,7 @@
 package fun.kaituo.holygrailwar;
 
 import fun.kaituo.gameutils.GameUtils;
+import fun.kaituo.holygrailwar.state.FightState;
 import fun.kaituo.holygrailwar.state.ReadyState;
 import fun.kaituo.holygrailwar.state.WaitingState;
 import fun.kaituo.gameutils.game.Game;
@@ -36,6 +37,7 @@ public class HolyGrailWar extends Game {
     private void initStates(){
         WaitingState.INST.init();
         ReadyState.INST.init();
+        FightState.INST.init();
     }
 
     @Override
