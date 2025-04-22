@@ -1,6 +1,19 @@
 package fun.kaituo.holygrailwar.utils;
 
+import fun.kaituo.holygrailwar.characters.CharacterBase;
+import fun.kaituo.holygrailwar.characters.Homura.HomuraArcher;
+import fun.kaituo.holygrailwar.characters.Homura.HomuraAssassin;
+import fun.kaituo.holygrailwar.characters.Kyoko.KyokoCaster;
+import fun.kaituo.holygrailwar.characters.Kyoko.KyokoLancer;
+import fun.kaituo.holygrailwar.characters.Madoka.MadokaArcher;
+import fun.kaituo.holygrailwar.characters.Mami.MamiArcher;
+import fun.kaituo.holygrailwar.characters.Mami.MamiCaster;
+import fun.kaituo.holygrailwar.characters.Mami.MamiRider;
+import fun.kaituo.holygrailwar.characters.Sayaka.SayakaBerserker;
+import fun.kaituo.holygrailwar.characters.Sayaka.SayakaRider;
+import fun.kaituo.holygrailwar.characters.Sayaka.SayakaSaber;
 import fun.kaituo.holygrailwar.sign.*;
+import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,19 +52,30 @@ public class DrawCareerClass {
     // 角色类
     public static class GameCharacter {
         private final String name;
+        private final Map<ClassType, Class<? extends CharacterBase>> characterClasses;
         private final Map<ClassType, Integer> classWeights; // 各职阶权重
 
         public GameCharacter(String name) {
             this.name = name;
+            this.characterClasses = new EnumMap<>(ClassType.class);
             this.classWeights = new EnumMap<>(ClassType.class);
         }
 
         public String getName() { return name; }
 
         // 添加职阶及权重
-        public GameCharacter addClass(ClassType classType, int weight) {
+        public GameCharacter addClass(ClassType classType, int weight, Class<? extends CharacterBase> characterClass) {
             classWeights.put(classType, weight);
+            characterClasses.put(classType, characterClass);
             return this;
+        }
+        public CharacterBase createCharacterInstance(Player player, ClassType classType) {
+            try {
+                Class<? extends CharacterBase> clazz = characterClasses.get(classType);
+                return clazz.getConstructor(Player.class).newInstance(player);
+            } catch (Exception e) {
+                throw new RuntimeException("无法创建角色实例", e);
+            }
         }
 
         public int getWeightForClass(ClassType classType) {
@@ -76,21 +100,21 @@ public class DrawCareerClass {
         // 初始化角色数据
         allCharacters = Arrays.asList(
                 new GameCharacter("美树沙耶香")
-                        .addClass(ClassType.SABER, 1)
-                        .addClass(ClassType.BERSERKER, 2)
-                        .addClass(ClassType.RIDER, 2),
+                        .addClass(ClassType.SABER, 1, SayakaSaber.class)
+                        .addClass(ClassType.BERSERKER, 2, SayakaBerserker.class)
+                        .addClass(ClassType.RIDER, 2, SayakaRider.class),
                 new GameCharacter("佐仓杏子")
-                        .addClass(ClassType.LANCER, 1)
-                        .addClass(ClassType.CASTER, 2),
-                new GameCharacter("晓美焰")
-                        .addClass(ClassType.ASSASSIN, 1)
-                        .addClass(ClassType.ARCHER, 3),
+                        .addClass(ClassType.LANCER, 1, KyokoLancer.class)
+                        .addClass(ClassType.CASTER, 2, KyokoCaster.class),
                 new GameCharacter("鹿目圆")
-                        .addClass(ClassType.ARCHER, 1),
+                        .addClass(ClassType.ARCHER,1, MadokaArcher.class),
+                new GameCharacter("晓美焰")
+                        .addClass(ClassType.ASSASSIN,1, HomuraAssassin.class)
+                        .addClass(ClassType.ARCHER,2, HomuraArcher.class),
                 new GameCharacter("巴麻美")
-                        .addClass(ClassType.CASTER, 1)
-                        .addClass(ClassType.ARCHER, 2)
-                        .addClass(ClassType.RIDER,1)
+                        .addClass(ClassType.RIDER,1, MamiRider.class)
+                        .addClass(ClassType.ARCHER,2, MamiArcher.class)
+                        .addClass(ClassType.CASTER,3, MamiCaster.class)
         );
 
         // 构建职阶到角色的映射

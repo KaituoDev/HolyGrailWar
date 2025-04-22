@@ -2,6 +2,7 @@ package fun.kaituo.holygrailwar.state;
 
 import fun.kaituo.gameutils.game.GameState;
 import fun.kaituo.holygrailwar.HolyGrailWar;
+import fun.kaituo.holygrailwar.characters.CharacterBase;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass.GameCharacter;
 import org.bukkit.Bukkit;
@@ -22,7 +23,7 @@ import java.util.Set;
 public class FightState implements GameState, Listener {
     public static final FightState INST = new FightState();
     private Set<Player> players;
-    private final HashMap<Player, GameCharacter> playerCharacters = new HashMap<>();
+    private final HashMap<Player, CharacterBase> playerCharacters = new HashMap<>();
     private HolyGrailWar game;
 
     public void init() {
@@ -65,22 +66,21 @@ public class FightState implements GameState, Listener {
 
             DrawCareerClass drawSystem = DrawCareerClass.getInstance();
             GameCharacter character = drawSystem.drawWeightedUniqueCharacter();
-            playerCharacters.put(player, character);
-
-            // 获取职阶信息
             DrawCareerClass.ClassType classType = character.getAvailableClasses().iterator().next();
 
-            // 构建彩色消息
+            // 创建角色实例
+            CharacterBase characterInstance = character.createCharacterInstance(player, classType);
+            characterInstance.setupInventory();
+
+            playerCharacters.put(player, characterInstance);
+
             String message = String.format(
                     "§a%s §7作为 %s §7回应了你的召唤！",
                     character.getName(),
                     classType.getColoredName()
             );
 
-            player.sendTitle("",message,10,70,20);
-
-            // 这里可以添加根据职阶给予不同效果或物品的逻辑
-
+            player.sendTitle("", message, 10, 70, 20);
         } catch (IllegalStateException e) {
             player.sendMessage("§c角色分配失败: " + e.getMessage());
         }
@@ -121,7 +121,7 @@ public class FightState implements GameState, Listener {
     }
 
     // 获取玩家的角色信息
-    public GameCharacter getPlayerCharacter(Player player) {
+    public CharacterBase getPlayerCharacter(Player player) {
         return playerCharacters.get(player);
     }
 }
