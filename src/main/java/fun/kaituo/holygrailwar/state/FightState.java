@@ -6,6 +6,7 @@ import fun.kaituo.holygrailwar.characters.CharacterBase;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass.GameCharacter;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -13,17 +14,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Set;
+import java.util.HashSet;
 
 public class FightState implements GameState, Listener {
     public static final FightState INST = new FightState();
     private Set<Player> players;
     private final HashMap<Player, CharacterBase> playerCharacters = new HashMap<>();
+    private final Set<Player> alivePlayers = new HashSet<>();
     private HolyGrailWar game;
 
     public void init() {
@@ -35,30 +39,59 @@ public class FightState implements GameState, Listener {
         // 重置抽取记录，确保新一局游戏可以重新抽取
         DrawCareerClass.getInstance().resetDrawnCharacters();
 
-        // 为所有玩家分配角色
+        // 为所有玩家分配角色并初始化存活玩家列表
+        alivePlayers.clear();
         for (Player player : game.getPlayers()) {
             assignCareer(player);
+            alivePlayers.add(player);
         }
         Bukkit.getPluginManager().registerEvents(this, game);
     }
 
     @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (!alivePlayers.contains(player)) return;
+
+        // 设置玩家为观察者模式
+        player.setGameMode(GameMode.SPECTATOR);
+        alivePlayers.remove(player);
+
+        // 检查是否只剩一名玩家
+        if (alivePlayers.size() <= 1) {
+            endGame();
+        }
+    }
+
+    private void endGame() {
+        if (alivePlayers.isEmpty()) {
+            Bukkit.getOnlinePlayers().forEach(p ->
+                    p.sendTitle("§c游戏结束！", "§7没有胜利者...", 10, 70, 20)
+            );
+        } else {
+            Player winner = alivePlayers.iterator().next();
+            Bukkit.getOnlinePlayers().forEach(p ->
+                    p.sendTitle("§6游戏结束！", "§a" + winner.getName() + "§7赢得了圣杯战争！", 10, 70, 20)
+            );
+        }
+
+        // 延迟3秒后返回等待状态
+        Bukkit.getScheduler().runTaskLater(game, () -> {
+            game.setState(WaitingState.INST);
+        }, 60L); // 60 ticks = 3 seconds
+    }
+
+    @EventHandler
     public void onPlayerclickCareerButton(PlayerInteractEvent event) {
-        Bukkit.broadcastMessage("1");
         if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-            Bukkit.broadcastMessage("2");
             return;
         }
         Block block = event.getClickedBlock();
         if (!block.getType().equals(Material.STONE_BUTTON)){
-            Bukkit.broadcastMessage("3");
             return;
         }
-        Bukkit.broadcastMessage("4");
         assignCareer(event.getPlayer());
     }
-
-
 
     private void assignCareer(Player player) {
         try {
@@ -86,11 +119,14 @@ public class FightState implements GameState, Listener {
         }
     }
 
-
-
     @Override
     public void exit() {
+        // 重置所有玩家为生存模式
+        for (Player player : game.getPlayers()) {
+            player.setGameMode(GameMode.SURVIVAL);
+        }
         playerCharacters.clear();
+        alivePlayers.clear();
         HandlerList.unregisterAll(this);
     }
 
@@ -104,19 +140,23 @@ public class FightState implements GameState, Listener {
         assignCareer(player);
         player.addPotionEffect(new PotionEffect(PotionEffectType.HEALTH_BOOST, -1, 19, false, false));
         player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, -1, 1, false, false));
+        alivePlayers.add(player);
     }
 
     @Override
     public void removePlayer(Player player) {
         playerCharacters.remove(player);
+        alivePlayers.remove(player);
         player.removePotionEffect(PotionEffectType.HEALTH_BOOST);
         player.removePotionEffect(PotionEffectType.SATURATION);
+        player.setGameMode(GameMode.SURVIVAL);
     }
 
     @Override
     public void forceStop() {
-        Bukkit.broadcastMessage("xxx");
+        Bukkit.broadcastMessage("§c游戏被强制终止！");
         playerCharacters.clear();
+        alivePlayers.clear();
         game.setState(WaitingState.INST);
     }
 
