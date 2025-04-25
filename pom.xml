@@ -125,5 +125,13 @@
             <version>2.0.0</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-fabric</artifactId>
+            <version>7.3.8-mc1.21</version>
+        </dependency>
+
     </dependencies>
+
+
 </project>

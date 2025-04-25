@@ -42,8 +42,8 @@ public class FightState implements GameState, Listener {
         // 为所有玩家分配角色并初始化存活玩家列表
         alivePlayers.clear();
         for (Player player : game.getPlayers()) {
-            assignCareer(player);
             alivePlayers.add(player);
+            addPlayer(player);
         }
         Bukkit.getPluginManager().registerEvents(this, game);
     }
@@ -74,7 +74,8 @@ public class FightState implements GameState, Listener {
                     p.sendTitle("§6游戏结束！", "§a" + winner.getName() + "§7赢得了圣杯战争！", 10, 70, 20)
             );
         }
-
+        for (Player p : game.getPlayers())
+            removePlayer(p);
         // 延迟3秒后返回等待状态
         Bukkit.getScheduler().runTaskLater(game, () -> {
             game.setState(WaitingState.INST);

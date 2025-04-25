@@ -37,6 +37,12 @@ public class ReadyState implements GameState {
 
     @Override
     public void exit() {
+        for (Player p : game.getPlayers()) {
+            removePlayer(p);
+        }
+        for (Integer taskId : taskIds) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
     }
 
     @Override
