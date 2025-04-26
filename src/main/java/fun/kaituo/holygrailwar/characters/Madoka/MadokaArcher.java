@@ -9,10 +9,7 @@ public class MadokaArcher extends CharacterBase {
         super(player, "鹿目圆", DrawCareerClass.ClassType.ARCHER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

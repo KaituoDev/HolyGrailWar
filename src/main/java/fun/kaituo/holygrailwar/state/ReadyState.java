@@ -2,6 +2,7 @@ package fun.kaituo.holygrailwar.state;
 
 import fun.kaituo.gameutils.game.Game;
 import fun.kaituo.gameutils.game.GameState;
+import fun.kaituo.gameutils.util.Misc;
 import fun.kaituo.holygrailwar.HolyGrailWar;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -28,6 +29,7 @@ public class ReadyState implements GameState {
         for (Player p : game.getPlayers()) {
             addPlayer(p);
         }
+        Misc.pasteSchematicAtOriginalPosition("FGO",game.getLocation().getWorld());
         taskIds.add(Bukkit.getScheduler().runTaskLater(game, () -> {
             game.setState(FightState.INST);
         }, COUNTDOWN_SECONDS * 20).getTaskId());

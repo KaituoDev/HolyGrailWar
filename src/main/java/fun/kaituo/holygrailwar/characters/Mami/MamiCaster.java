@@ -9,10 +9,7 @@ public class MamiCaster extends CharacterBase {
         super(player, "巴麻美", DrawCareerClass.ClassType.CASTER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

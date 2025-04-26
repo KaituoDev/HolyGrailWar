@@ -9,10 +9,7 @@ public class MamiRider extends CharacterBase {
         super(player, "巴麻美", DrawCareerClass.ClassType.RIDER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

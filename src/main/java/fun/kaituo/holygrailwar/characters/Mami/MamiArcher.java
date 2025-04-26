@@ -9,10 +9,7 @@ public class MamiArcher extends CharacterBase {
         super(player, "巴麻美", DrawCareerClass.ClassType.ARCHER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

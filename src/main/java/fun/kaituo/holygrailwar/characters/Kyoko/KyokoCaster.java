@@ -9,10 +9,7 @@ public class KyokoCaster extends CharacterBase {
         super(player, "佐仓杏子", DrawCareerClass.ClassType.CASTER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

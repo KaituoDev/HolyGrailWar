@@ -9,10 +9,7 @@ public class SayakaSaber extends CharacterBase {
         super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

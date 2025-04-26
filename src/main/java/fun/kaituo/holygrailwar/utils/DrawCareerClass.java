@@ -164,18 +164,16 @@ public class DrawCareerClass {
 
     // 从激活的职阶中随机抽取一个职阶
     public ClassType drawRandomActiveClass() {
-        List<ClassType> activeClasses = getActiveClassTypes();
+        List<ClassType> activeClasses = new ArrayList<>(availableClasses);
         if (activeClasses.isEmpty()) {
             throw new IllegalStateException("没有激活的职阶可供抽取");
         }
-        return activeClasses.get(random.nextInt(activeClasses.size()));
+        ClassType drawnClass = activeClasses.get(random.nextInt(activeClasses.size()));
+        availableClasses.remove(drawnClass);
+        return drawnClass;
     }
 
-    // 完整的加权不重复抽取方法（包含职阶激活检查）
-    public GameCharacter drawWeightedUniqueCharacter() {
-        ClassType classType = drawRandomActiveClass();
-        return drawWeightedUniqueCharacter(classType);
-    }
+
 
 
     // 核心方法：加权不重复抽取
@@ -213,9 +211,12 @@ public class DrawCareerClass {
     }
 
     // 重置抽取记录
-    public void resetDrawnCharacters() {
+    public void resetDrawnCharactersAndClasses() {
         drawnCharacters.clear();
+        availableClasses.clear();
+        availableClasses.addAll(getActiveClassTypes());
     }
+
 
     // 获取已抽取的角色
     public Set<GameCharacter> getDrawnCharacters() {
@@ -259,7 +260,7 @@ public class DrawCareerClass {
         );
 
         // 重置后可以重新抽取
-        system.resetDrawnCharacters();
+        system.resetDrawnCharactersAndClasses();
         System.out.println("\n系统重置后，可以重新抽取角色");
     }
 }

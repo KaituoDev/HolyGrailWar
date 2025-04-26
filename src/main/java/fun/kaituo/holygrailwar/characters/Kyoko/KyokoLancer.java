@@ -9,10 +9,7 @@ public class KyokoLancer extends CharacterBase {
         super(player, "佐仓杏子", DrawCareerClass.ClassType.LANCER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

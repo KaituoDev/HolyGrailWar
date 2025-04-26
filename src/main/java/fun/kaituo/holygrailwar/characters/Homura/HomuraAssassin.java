@@ -9,10 +9,7 @@ public class HomuraAssassin extends CharacterBase {
         super(player, "晓美焰", DrawCareerClass.ClassType.ASSASSIN);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
 
     @Override
     public void activateSkill() {

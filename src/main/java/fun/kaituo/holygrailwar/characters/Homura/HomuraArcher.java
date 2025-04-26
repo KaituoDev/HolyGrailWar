@@ -9,10 +9,9 @@ public class HomuraArcher extends CharacterBase {
         super(player, "晓美焰", DrawCareerClass.ClassType.ARCHER);
     }
 
-    @Override
-    public void setupInventory() {
 
-    }
+
+
 
     @Override
     public void activateSkill() {

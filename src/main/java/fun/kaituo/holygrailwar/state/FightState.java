@@ -29,6 +29,7 @@ public class FightState implements GameState, Listener {
     private final HashMap<Player, CharacterBase> playerCharacters = new HashMap<>();
     private final Set<Player> alivePlayers = new HashSet<>();
     private HolyGrailWar game;
+    private boolean isGameOver = true;
 
     public void init() {
         game = HolyGrailWar.inst();
@@ -37,7 +38,8 @@ public class FightState implements GameState, Listener {
     @Override
     public void enter() {
         // 重置抽取记录，确保新一局游戏可以重新抽取
-        DrawCareerClass.getInstance().resetDrawnCharacters();
+        isGameOver = false;
+        DrawCareerClass.getInstance().resetDrawnCharactersAndClasses();
 
         // 为所有玩家分配角色并初始化存活玩家列表
         alivePlayers.clear();
@@ -57,13 +59,10 @@ public class FightState implements GameState, Listener {
         player.setGameMode(GameMode.SPECTATOR);
         alivePlayers.remove(player);
 
-        // 检查是否只剩一名玩家
-        if (alivePlayers.size() <= 1) {
-            endGame();
-        }
     }
 
     private void endGame() {
+        isGameOver = true;
         if (alivePlayers.isEmpty()) {
             Bukkit.getOnlinePlayers().forEach(p ->
                     p.sendTitle("§c游戏结束！", "§7没有胜利者...", 10, 70, 20)
@@ -99,8 +98,9 @@ public class FightState implements GameState, Listener {
             playerCharacters.remove(player);
 
             DrawCareerClass drawSystem = DrawCareerClass.getInstance();
-            GameCharacter character = drawSystem.drawWeightedUniqueCharacter();
-            DrawCareerClass.ClassType classType = character.getAvailableClasses().iterator().next();
+            DrawCareerClass.ClassType classType = drawSystem.drawRandomActiveClass();
+            GameCharacter character = drawSystem.drawWeightedUniqueCharacter(classType);
+
 
             // 创建角色实例
             CharacterBase characterInstance = character.createCharacterInstance(player, classType);
@@ -134,6 +134,9 @@ public class FightState implements GameState, Listener {
     @Override
     public void tick() {
         // 游戏进行中的逻辑
+        if (!isGameOver && alivePlayers.size() <= 1) {
+            endGame();
+        }
     }
 
     @Override
