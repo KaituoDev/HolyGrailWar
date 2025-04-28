@@ -29,7 +29,6 @@ public class ReadyState implements GameState {
         for (Player p : game.getPlayers()) {
             addPlayer(p);
         }
-        Misc.pasteSchematicAtOriginalPosition("FGO",game.getLocation().getWorld());
         taskIds.add(Bukkit.getScheduler().runTaskLater(game, () -> {
             game.setState(FightState.INST);
         }, COUNTDOWN_SECONDS * 20).getTaskId());

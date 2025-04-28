@@ -94,6 +94,7 @@ public class DrawCareerClass {
     private final List<GameCharacter> allCharacters;
     private final Map<ClassType, List<GameCharacter>> classToCharacters;
     private final Set<GameCharacter> drawnCharacters = new HashSet<>();
+    private final Set<ClassType> availableClasses = new HashSet<>();
     private final Random random = new Random();
 
     private DrawCareerClass() {
@@ -128,6 +129,10 @@ public class DrawCareerClass {
                 classToCharacters.get(classType).add(character);
             }
         }
+    }
+
+    private void reset() {
+
     }
 
     public static DrawCareerClass getInstance() {
