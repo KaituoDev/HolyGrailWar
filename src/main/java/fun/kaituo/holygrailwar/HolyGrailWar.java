@@ -1,6 +1,8 @@
 package fun.kaituo.holygrailwar;
 
 import fun.kaituo.gameutils.GameUtils;
+import fun.kaituo.holygrailwar.characters.CharacterBase;
+import fun.kaituo.holygrailwar.commands.SetCharacterCommand;
 import fun.kaituo.holygrailwar.state.FightState;
 import fun.kaituo.holygrailwar.state.ReadyState;
 import fun.kaituo.holygrailwar.state.WaitingState;
@@ -18,6 +20,8 @@ public class HolyGrailWar extends Game {
     public static final WaitingState INST = new WaitingState();
     private static HolyGrailWar instance;
     public static HolyGrailWar inst() { return instance; }
+    private final Map<UUID, CharacterBase> playerCharacters = new HashMap<>();
+
 
     public final Set<UUID> playerIds = new HashSet<>();
     @Getter
@@ -32,6 +36,28 @@ public class HolyGrailWar extends Game {
             players.add(p);
         }
         return players;
+    }
+
+    // 添加角色管理方法
+    public void setPlayerCharacter(Player player, CharacterBase character) {
+        // 清除玩家当前角色(如果有)
+        if (playerCharacters.containsKey(player.getUniqueId())) {
+            playerCharacters.get(player.getUniqueId()).clearInventory();
+        }
+
+        // 设置新角色
+        playerCharacters.put(player.getUniqueId(), character);
+    }
+
+    public CharacterBase getPlayerCharacter(Player player) {
+        return playerCharacters.get(player.getUniqueId());
+    }
+
+    public void removePlayerCharacter(Player player) {
+        if (playerCharacters.containsKey(player.getUniqueId())) {
+            playerCharacters.get(player.getUniqueId()).clearInventory();
+            playerCharacters.remove(player.getUniqueId());
+        }
     }
 
     private void initStates(){
@@ -50,6 +76,7 @@ public class HolyGrailWar extends Game {
 
     @Override
     public void removePlayer(Player p) {
+        removePlayerCharacter(p);
         playerIds.remove(p.getUniqueId());
         super.removePlayer(p);
     }
@@ -69,6 +96,10 @@ public class HolyGrailWar extends Game {
 
         instance = this;
         updateExtraInfo("§e圣杯战争", getLoc("lobby"));
+
+        // 注册命令
+        getCommand("setcharacter").setExecutor(new SetCharacterCommand());
+
         Bukkit.getScheduler().runTaskLater(this, () -> {
             initStates();
             setState(WaitingState.INST);

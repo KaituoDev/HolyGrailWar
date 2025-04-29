@@ -5,3 +5,7 @@ authors:
   - mn_yinduan
 version: 2.0
 depend: [GameUtils]
+commands:
+  setcharacter:
+    description: 设置玩家的角色和职阶
+    usage: /setcharacter <角色名> <职阶>

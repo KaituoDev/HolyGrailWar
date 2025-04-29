@@ -122,9 +122,8 @@ public class FightState implements GameState, Listener {
 
     @Override
     public void exit() {
-        // 重置所有玩家为生存模式
         for (Player player : game.getPlayers()) {
-            player.setGameMode(GameMode.SURVIVAL);
+            player.setGameMode(GameMode.ADVENTURE);
         }
         playerCharacters.clear();
         alivePlayers.clear();

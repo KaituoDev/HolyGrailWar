@@ -36,7 +36,7 @@ public abstract class CharacterBase {
         player.getInventory().addItem(item);
     }
 
-    protected void clearInventory() {
+    public void clearInventory() {
         player.getInventory().clear();
     }
 }

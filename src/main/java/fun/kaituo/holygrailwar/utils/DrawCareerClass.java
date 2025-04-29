@@ -49,6 +49,10 @@ public class DrawCareerClass {
         }
     }
 
+    public List<GameCharacter> getAllCharacters() {
+        return new ArrayList<>(allCharacters); // 返回防御性副本
+    }
+
     // 角色类
     public static class GameCharacter {
         private final String name;
