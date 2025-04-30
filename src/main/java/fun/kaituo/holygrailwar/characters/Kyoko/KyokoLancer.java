@@ -11,8 +11,5 @@ public class KyokoLancer extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }

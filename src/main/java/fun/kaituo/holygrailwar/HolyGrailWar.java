@@ -10,6 +10,7 @@ import fun.kaituo.gameutils.game.Game;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -55,7 +56,9 @@ public class HolyGrailWar extends Game {
 
     public void removePlayerCharacter(Player player) {
         if (playerCharacters.containsKey(player.getUniqueId())) {
-            playerCharacters.get(player.getUniqueId()).clearInventory();
+            CharacterBase character = playerCharacters.get(player.getUniqueId());
+            character.cleanup(); // 清理监听器
+            character.clearInventory();
             playerCharacters.remove(player.getUniqueId());
         }
     }
@@ -99,6 +102,7 @@ public class HolyGrailWar extends Game {
 
         // 注册命令
         getCommand("setcharacter").setExecutor(new SetCharacterCommand());
+        getCommand("setcharacter").setTabCompleter(new SetCharacterCommand());
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
             initStates();

@@ -24,7 +24,6 @@ public abstract class CharacterBase {
     public void setupInventory(){
         HolyGrailWar.inst().getInv(getClass().getSimpleName()).apply(player);
     };
-    public abstract void activateSkill();
 
     public String getCharacterName() {return characterName;}
 
@@ -38,5 +37,9 @@ public abstract class CharacterBase {
 
     public void clearInventory() {
         player.getInventory().clear();
+    }
+
+    public void cleanup() {
+        // 由子类实现具体清理逻辑
     }
 }

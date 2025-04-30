@@ -1,14 +1,23 @@
 package fun.kaituo.holygrailwar.commands;
 
+import fun.kaituo.gameutils.util.Misc;
 import fun.kaituo.holygrailwar.HolyGrailWar;
 import fun.kaituo.holygrailwar.characters.CharacterBase;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public class SetCharacterCommand implements CommandExecutor {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+public class SetCharacterCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -54,6 +63,11 @@ public class SetCharacterCommand implements CommandExecutor {
                 return true;
             }
 
+
+
+            // 先完全移除现有角色
+            HolyGrailWar.inst().removePlayerCharacter(player);
+
             // 创建新角色实例
             CharacterBase newCharacter = targetCharacter.createCharacterInstance(player, classType);
 
@@ -62,13 +76,49 @@ public class SetCharacterCommand implements CommandExecutor {
 
             player.sendMessage("已成功将你的角色设置为: " + characterName + " - " + classType.getColoredName());
 
+
+
         } catch (IllegalArgumentException e) {
             player.sendMessage("无效的职阶名称");
         } catch (Exception e) {
             player.sendMessage("设置角色时出错: " + e.getMessage());
-            e.printStackTrace();
+            HolyGrailWar.inst().getLogger().log(Level.SEVERE,
+                    "为玩家 " + player.getName() + " 设置角色时出错", e);
         }
 
         return true;
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        DrawCareerClass characterSystem = DrawCareerClass.getInstance();
+
+        if (args.length == 1) {
+            // 返回所有角色名称的补全
+            return Misc.getMatchingCompletions(args[0],
+                    characterSystem.getAllCharacters().stream()
+                            .map(DrawCareerClass.GameCharacter::getName)
+                            .collect(Collectors.toList()));
+        }
+
+        if (args.length == 2) {
+            // 查找第一个参数对应的角色
+            String characterName = args[0];
+            DrawCareerClass.GameCharacter targetCharacter = characterSystem.getAllCharacters().stream()
+                    .filter(c -> c.getName().equals(characterName))
+                    .findFirst()
+                    .orElse(null);
+
+            if (targetCharacter != null) {
+                // 返回该角色可用职阶的补全
+                return Misc.getMatchingCompletions(args[1],
+                        targetCharacter.getAvailableClasses().stream()
+                                .map(Enum::name)
+                                .map(String::toLowerCase)
+                                .collect(Collectors.toList()));
+            }
+        }
+
+        return new ArrayList<>();
     }
 }

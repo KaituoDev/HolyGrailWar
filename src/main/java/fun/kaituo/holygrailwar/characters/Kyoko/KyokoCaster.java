@@ -11,8 +11,4 @@ public class KyokoCaster extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
-
-    }
 }

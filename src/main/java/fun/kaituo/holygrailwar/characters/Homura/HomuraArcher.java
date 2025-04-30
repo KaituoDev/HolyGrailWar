@@ -13,8 +13,4 @@ public class HomuraArcher extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
-
-    }
 }

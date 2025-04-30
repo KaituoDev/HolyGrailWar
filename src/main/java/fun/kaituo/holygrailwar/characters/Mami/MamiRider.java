@@ -11,8 +11,5 @@ public class MamiRider extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }

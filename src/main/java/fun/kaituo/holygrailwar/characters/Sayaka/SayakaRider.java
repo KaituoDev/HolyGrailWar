@@ -11,8 +11,5 @@ public class SayakaRider extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }

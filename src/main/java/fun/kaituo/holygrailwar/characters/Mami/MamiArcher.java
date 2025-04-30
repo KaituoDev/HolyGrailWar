@@ -11,8 +11,5 @@ public class MamiArcher extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }

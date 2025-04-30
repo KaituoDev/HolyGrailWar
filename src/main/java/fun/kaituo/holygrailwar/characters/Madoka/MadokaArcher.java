@@ -11,8 +11,5 @@ public class MadokaArcher extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }

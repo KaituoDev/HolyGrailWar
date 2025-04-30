@@ -11,8 +11,4 @@ public class HomuraAssassin extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
-
-    }
 }

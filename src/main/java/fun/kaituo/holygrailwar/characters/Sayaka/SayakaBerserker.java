@@ -11,8 +11,5 @@ public class SayakaBerserker extends CharacterBase {
 
 
 
-    @Override
-    public void activateSkill() {
 
-    }
 }
