@@ -7,6 +7,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class AbstractSkill {
     protected final JavaPlugin plugin;
     protected final Player player;
@@ -14,6 +17,8 @@ public abstract class AbstractSkill {
     private final String skillName;
     private final int cooldownTicks;
     private long lastUsedTime = 0;
+    private static final Set<Material> allSkillItems = new HashSet<>();
+
 
     public AbstractSkill(JavaPlugin plugin, Player player, Material triggerItem, String skillName, int cooldownTicks) {
         this.plugin = plugin;
@@ -21,6 +26,14 @@ public abstract class AbstractSkill {
         this.triggerItem = triggerItem;
         this.skillName = skillName;
         this.cooldownTicks = cooldownTicks;
+        // 注册技能物品
+        synchronized (allSkillItems) {
+            allSkillItems.add(triggerItem);
+        }
+    }
+
+    public static Set<Material> getAllSkillItems() {
+        return new HashSet<>(allSkillItems);
     }
 
     /**

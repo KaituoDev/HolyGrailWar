@@ -10,6 +10,7 @@ import fun.kaituo.gameutils.game.Game;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
@@ -86,8 +87,13 @@ public class HolyGrailWar extends Game {
 
     @Override
     public void forceStop() {
-
+        // 清理所有玩家的冷却时间
+        for (Player player : getPlayers()) {
+            player.setCooldown(Material.DIAMOND_SWORD, 0);
+            player.setCooldown(Material.GLOW_INK_SAC, 0);
+        }
     }
+
 
     @Override
     public void tick() {
@@ -111,6 +117,10 @@ public class HolyGrailWar extends Game {
     }
 
     public void onDisable() {
+        for (Player player : getPlayers()) {
+            player.setCooldown(Material.DIAMOND_SWORD, 0);
+            player.setCooldown(Material.GLOW_INK_SAC, 0);
+        }
         super.onDisable();
     }
 

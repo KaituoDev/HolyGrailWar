@@ -34,15 +34,17 @@ public class SayakaSaber extends CharacterBase {
         super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER);
         this.skillCycle = new SkillCycle(plugin, player);
         this.blackTideSkill = new BlackTideSkill(plugin, player);
+        addSkill(this.skillCycle);
+        addSkill(this.blackTideSkill);
     }
 
     @Override
     public void cleanup() {
+        super.cleanup(); // 调用父类清理方法
         if (listener != null) {
             PlayerInteractEvent.getHandlerList().unregister(listener);
         }
-        player.setWalkSpeed(0.2f); // 确保技能结束时恢复移动速度
-        player.setCooldown(Material.DIAMOND_SWORD, 0);
+        player.setWalkSpeed(0.2f);
     }
 
     public class BlackTideSkill extends AbstractSkill {
