@@ -1,5 +1,7 @@
 package fun.kaituo.holygrailwar.utils;
 
+import fun.kaituo.holygrailwar.HolyGrailWar;
+import fun.kaituo.holygrailwar.characters.CharacterBase;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -18,19 +20,25 @@ public abstract class AbstractSkill {
     private final int cooldownTicks;
     private long lastUsedTime = 0;
     private static final Set<Material> allSkillItems = new HashSet<>();
+    private final int manaCost; // 新增：技能消耗魔力值
 
 
-    public AbstractSkill(JavaPlugin plugin, Player player, Material triggerItem, String skillName, int cooldownTicks) {
+
+    public AbstractSkill(JavaPlugin plugin, Player player, Material triggerItem,
+                         String skillName, int cooldownTicks, int manaCost) {
         this.plugin = plugin;
         this.player = player;
         this.triggerItem = triggerItem;
         this.skillName = skillName;
         this.cooldownTicks = cooldownTicks;
+        this.manaCost = manaCost;
+
         // 注册技能物品
         synchronized (allSkillItems) {
             allSkillItems.add(triggerItem);
         }
     }
+
 
     public static Set<Material> getAllSkillItems() {
         return new HashSet<>(allSkillItems);
@@ -58,10 +66,21 @@ public abstract class AbstractSkill {
                     return;
                 }
 
+                // 检查魔力是否足够
+                CharacterBase character = HolyGrailWar.inst().getPlayerCharacter(player);
+                if (character != null && !character.hasEnoughMana(manaCost)) {
+                    return;
+                }
+
                 // 触发技能
                 if (onTrigger(event)) {
                     lastUsedTime = System.currentTimeMillis();
                     player.setCooldown(triggerItem, cooldownTicks);
+
+                    // 消耗魔力
+                    if (character != null) {
+                        character.consumeMana(manaCost);
+                    }
                 }
             }
         }

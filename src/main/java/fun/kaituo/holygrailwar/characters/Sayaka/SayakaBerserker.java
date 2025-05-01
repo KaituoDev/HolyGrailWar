@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 public class SayakaBerserker extends CharacterBase {
     public SayakaBerserker(Player player) {
-        super(player,"美树沙耶香", DrawCareerClass.ClassType.BERSERKER);
+        super(player,"美树沙耶香", DrawCareerClass.ClassType.BERSERKER, 0, 0, 0);
     }
 
 

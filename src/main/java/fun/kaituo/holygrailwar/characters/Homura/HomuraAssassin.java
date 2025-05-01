@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 public class HomuraAssassin extends CharacterBase {
     public HomuraAssassin(Player player) {
-        super(player, "晓美焰", DrawCareerClass.ClassType.ASSASSIN);
+        super(player, "晓美焰", DrawCareerClass.ClassType.ASSASSIN, 0, 0, 0);
     }
 
 

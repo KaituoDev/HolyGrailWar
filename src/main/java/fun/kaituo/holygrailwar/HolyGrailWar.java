@@ -75,11 +75,20 @@ public class HolyGrailWar extends Game {
         p.setBedSpawnLocation(LobbyLocation, true);
         playerIds.add(p.getUniqueId());
         p.teleport(LobbyLocation);
+
+        // 初始化经验条
+        p.setExp(0);
+        p.setLevel(0);
+
         super.addPlayer(p);
     }
 
     @Override
     public void removePlayer(Player p) {
+        // 清理经验条
+        p.setExp(0);
+        p.setLevel(0);
+
         removePlayerCharacter(p);
         playerIds.remove(p.getUniqueId());
         super.removePlayer(p);

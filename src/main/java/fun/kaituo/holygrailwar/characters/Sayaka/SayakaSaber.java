@@ -25,15 +25,19 @@ public class SayakaSaber extends CharacterBase {
     private static final String SKILL_NAME = "迷惘裹挟之斩";
     private static final String BLACK_TIDE_SKILL_NAME = "黑潮蚀岸之声";
     private org.bukkit.event.Listener listener; // 保存监听器引用
+    private boolean isUltimateActive = false;
+
 
     public SayakaSaber(Player player) {
         this(player, (JavaPlugin) Bukkit.getPluginManager().getPlugin("HolyGrailWar"));
     }
 
     public SayakaSaber(Player player, JavaPlugin plugin) {
-        super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER);
-        this.skillCycle = new SkillCycle(plugin, player);
-        this.blackTideSkill = new BlackTideSkill(plugin, player);
+        super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER, 2400, 1, 0);
+        player.setExp(1.0f); // 初始满魔力
+        player.setLevel(0);
+        this.skillCycle = new SkillCycle(plugin, player, 100);
+        this.blackTideSkill = new BlackTideSkill(plugin, player, 600);
         addSkill(this.skillCycle);
         addSkill(this.blackTideSkill);
     }
@@ -45,13 +49,16 @@ public class SayakaSaber extends CharacterBase {
             PlayerInteractEvent.getHandlerList().unregister(listener);
         }
         player.setWalkSpeed(0.2f);
+        isUltimateActive = false; // 重置锁定状态
+
     }
 
     public class BlackTideSkill extends AbstractSkill {
         private org.bukkit.event.Listener blackTideListener; // 新增监听器字段
 
-        public BlackTideSkill(JavaPlugin plugin, Player player) {
-            super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 0);
+        public BlackTideSkill(JavaPlugin plugin, Player player, int manaCost) {
+            super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 0, manaCost);
+
             // 注册事件监听器
             blackTideListener = new org.bukkit.event.Listener() {
                 @org.bukkit.event.EventHandler
@@ -66,6 +73,7 @@ public class SayakaSaber extends CharacterBase {
 
         @Override
         protected boolean onTrigger(PlayerInteractEvent event) {
+            isUltimateActive = true;
 
             // 启动技能效果
             new BukkitRunnable() {
@@ -120,6 +128,7 @@ public class SayakaSaber extends CharacterBase {
                         player.setWalkSpeed(0.2f); // 恢复默认移动速度
                         this.cancel();
                         player.setCooldown(Material.DIAMOND_SWORD, 3600);
+                        isUltimateActive = false;
                     }
                 }
             }.runTaskTimer(plugin, 0, 2); // 每2 ticks(0.1秒)运行一次
@@ -129,8 +138,8 @@ public class SayakaSaber extends CharacterBase {
     }
 
     public class SkillCycle extends AbstractSkill {
-        public SkillCycle(JavaPlugin plugin, Player player) {
-            super(plugin, player, Material.GLOW_INK_SAC, SKILL_NAME, 60);
+        public SkillCycle(JavaPlugin plugin, Player player, int manaCost) {
+            super(plugin, player, Material.GLOW_INK_SAC, SKILL_NAME, 60, manaCost);
             // 保存监听器引用
             listener = new org.bukkit.event.Listener() {
                 @org.bukkit.event.EventHandler
@@ -145,6 +154,9 @@ public class SayakaSaber extends CharacterBase {
 
         @Override
         protected boolean onTrigger(PlayerInteractEvent event) {
+            if (isUltimateActive) {
+                return false;
+            }
             switch (skillCount % 4) {
                 case 0:
                     executeSkill1();

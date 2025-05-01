@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 public class MamiArcher extends CharacterBase {
     public MamiArcher(Player player) {
-        super(player, "巴麻美", DrawCareerClass.ClassType.ARCHER);
+        super(player, "巴麻美", DrawCareerClass.ClassType.ARCHER, 0, 0, 0);
     }
 
 
