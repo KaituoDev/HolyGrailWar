@@ -6,12 +6,12 @@ import fun.kaituo.holygrailwar.utils.DrawCareerClass;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,9 @@ import static org.bukkit.Bukkit.getPlayer;
 public class SayakaSaber extends CharacterBase {
     private int skillCount = 0;
     private final SkillCycle skillCycle;
+    private final BlackTideSkill blackTideSkill;
     private static final String SKILL_NAME = "迷惘裹挟之斩";
+    private static final String BLACK_TIDE_SKILL_NAME = "黑潮蚀岸之声";
     private org.bukkit.event.Listener listener; // 保存监听器引用
 
     public SayakaSaber(Player player) {
@@ -31,12 +33,96 @@ public class SayakaSaber extends CharacterBase {
     public SayakaSaber(Player player, JavaPlugin plugin) {
         super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER);
         this.skillCycle = new SkillCycle(plugin, player);
+        this.blackTideSkill = new BlackTideSkill(plugin, player);
     }
 
     @Override
     public void cleanup() {
         if (listener != null) {
             PlayerInteractEvent.getHandlerList().unregister(listener);
+        }
+        player.setWalkSpeed(0.2f); // 确保技能结束时恢复移动速度
+        player.setCooldown(Material.DIAMOND_SWORD, 0);
+    }
+
+    public class BlackTideSkill extends AbstractSkill {
+        private org.bukkit.event.Listener blackTideListener; // 新增监听器字段
+
+        public BlackTideSkill(JavaPlugin plugin, Player player) {
+            super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 0);
+            // 注册事件监听器
+            blackTideListener = new org.bukkit.event.Listener() {
+                @org.bukkit.event.EventHandler
+                public void onPlayerInteract(PlayerInteractEvent event) {
+                    if (event.getPlayer().equals(player)) {
+                        checkAndTrigger(event);
+                    }
+                }
+            };
+            plugin.getServer().getPluginManager().registerEvents(blackTideListener, plugin);
+        }
+
+        @Override
+        protected boolean onTrigger(PlayerInteractEvent event) {
+
+            // 启动技能效果
+            new BukkitRunnable() {
+                int duration = 0; // 持续时间计数器(0.1秒单位)
+                final Location center = player.getLocation();
+                final double radius = 30;
+                final double height = 5;
+
+                @Override
+                public void run() {
+                    // 应用效果
+                    if (duration == 0) {
+                        // 初始效果：限制移动并给予抗性
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4)); // 5秒抗性4
+                        player.setWalkSpeed(0); // 禁止移动
+                        player.setJumping(false); // 禁止跳跃
+                    }
+
+                    // 每0.1秒执行一次
+                    if (duration < 50) { // 5秒=50*0.1秒
+                        // 治疗释放者(每秒15，即每0.1秒1.5)
+                        if (player.getHealth() < player.getMaxHealth()) {
+                            player.setHealth(Math.min(player.getHealth() + 1.5, player.getMaxHealth()));
+                        }
+
+                        // 伤害圆形区域内的实体
+                        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, height, radius)) {
+                            if (entity instanceof LivingEntity && !(entity instanceof ArmorStand) && !entity.equals(player)) {
+                                LivingEntity livingEntity = (LivingEntity) entity;
+
+                                // 造成伤害
+                                livingEntity.damage(2.5, player);
+
+                                // 每秒增加缓慢效果等级(每10次增加一次)
+                                if (duration % 10 == 0) {
+                                    PotionEffect currentSlowness = livingEntity.getPotionEffect(PotionEffectType.SLOWNESS);
+                                    int newLevel = (currentSlowness != null) ? currentSlowness.getAmplifier() + 1 : 0;
+                                    livingEntity.addPotionEffect(new PotionEffect(
+                                            PotionEffectType.SLOWNESS,
+                                            20, // 1秒持续时间
+                                            newLevel,
+                                            false,
+                                            true
+                                    ));
+                                }
+                            }
+                        }
+
+                        duration++;
+                    } else {
+                        // 5秒结束后恢复移动能力
+                        player.setWalkSpeed(0.2f); // 恢复默认移动速度
+                        this.cancel();
+                        player.setCooldown(Material.DIAMOND_SWORD, 3600);
+                    }
+                }
+            }.runTaskTimer(plugin, 0, 2); // 每2 ticks(0.1秒)运行一次
+
+            return true;
         }
     }
 
@@ -649,3 +735,16 @@ public class SayakaSaber extends CharacterBase {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
