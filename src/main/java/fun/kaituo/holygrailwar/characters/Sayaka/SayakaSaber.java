@@ -54,12 +54,11 @@ public class SayakaSaber extends CharacterBase {
     }
 
     public class BlackTideSkill extends AbstractSkill {
-        private org.bukkit.event.Listener blackTideListener; // 新增监听器字段
+        private org.bukkit.event.Listener blackTideListener;
 
         public BlackTideSkill(JavaPlugin plugin, Player player, int manaCost) {
             super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 0, manaCost);
 
-            // 注册事件监听器
             blackTideListener = new org.bukkit.event.Listener() {
                 @org.bukkit.event.EventHandler
                 public void onPlayerInteract(PlayerInteractEvent event) {
@@ -77,43 +76,50 @@ public class SayakaSaber extends CharacterBase {
 
             // 启动技能效果
             new BukkitRunnable() {
-                int duration = 0; // 持续时间计数器(0.1秒单位)
+                int duration = 0;
                 final Location center = player.getLocation();
-                final double radius = 30;
+                final double radius = 20;
                 final double height = 5;
+                int waterDropCount = 0;
+                final List<Entity> affectedEntities = new ArrayList<>(); // 记录受影响的实体
 
                 @Override
                 public void run() {
-                    // 应用效果
                     if (duration == 0) {
-                        // 初始效果：限制移动并给予抗性
-                        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4)); // 5秒抗性4
-                        player.setWalkSpeed(0); // 禁止移动
-                        player.setJumping(false); // 禁止跳跃
+                        player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4));
+                        player.setWalkSpeed(0);
+                        player.setJumping(false);
                     }
 
-                    // 每0.1秒执行一次
-                    if (duration < 50) { // 5秒=50*0.1秒
-                        // 治疗释放者(每秒15，即每0.1秒1.5)
+                    if (duration < 50) {
+                        // 治疗效果
                         if (player.getHealth() < player.getMaxHealth()) {
                             player.setHealth(Math.min(player.getHealth() + 1.5, player.getMaxHealth()));
                         }
 
-                        // 伤害圆形区域内的实体
+                        // 绘制圆形边界
+                        drawCircleBoundary(center, radius);
+
+                        // 伤害效果和标记敌人
                         for (Entity entity : center.getWorld().getNearbyEntities(center, radius, height, radius)) {
                             if (entity instanceof LivingEntity && !(entity instanceof ArmorStand) && !entity.equals(player)) {
                                 LivingEntity livingEntity = (LivingEntity) entity;
 
-                                // 造成伤害
+                                // 伤害效果
                                 livingEntity.damage(2.5, player);
 
-                                // 每秒增加缓慢效果等级(每10次增加一次)
+                                // 标记敌人并创建箭头
+                                if (!affectedEntities.contains(entity)) {
+                                    affectedEntities.add(entity);
+                                }
+                                createDirectionArrow(livingEntity, center);
+
                                 if (duration % 10 == 0) {
                                     PotionEffect currentSlowness = livingEntity.getPotionEffect(PotionEffectType.SLOWNESS);
                                     int newLevel = (currentSlowness != null) ? currentSlowness.getAmplifier() + 1 : 0;
                                     livingEntity.addPotionEffect(new PotionEffect(
                                             PotionEffectType.SLOWNESS,
-                                            20, // 1秒持续时间
+                                            20,
                                             newLevel,
                                             false,
                                             true
@@ -122,16 +128,159 @@ public class SayakaSaber extends CharacterBase {
                             }
                         }
 
+                        // 清理已离开范围的实体
+                        affectedEntities.removeIf(e ->
+                                e.getLocation().distance(center) > radius ||
+                                        e.isDead() ||
+                                        !e.getWorld().equals(center.getWorld())
+                        );
+
+                        // 水滴粒子特效
+                        if (duration % 5 == 0) {
+                            waterDropCount = Math.min(waterDropCount + 10, 1000);
+                            for (int i = 0; i < waterDropCount; i++) {
+                                double theta = Math.random() * 2 * Math.PI;
+                                double phi = Math.random() * Math.PI / 2;
+                                double r = Math.random() * radius;
+
+                                double x = r * Math.sin(phi) * Math.cos(theta);
+                                double y = r * Math.cos(phi);
+                                double z = r * Math.sin(phi) * Math.sin(theta);
+
+                                Location particleLoc = center.clone().add(x, y, z);
+                                player.getWorld().spawnParticle(
+                                        Particle.DRIPPING_WATER,
+                                        particleLoc,
+                                        1,
+                                        0, 0, 0, 0
+                                );
+
+                                if (Math.random() < 0.05) {
+                                    player.getWorld().playSound(
+                                            particleLoc,
+                                            Sound.AMBIENT_UNDERWATER_EXIT,
+                                            0.3f,
+                                            0.8f + (float)Math.random() * 0.4f
+                                    );
+                                }
+                            }
+                        }
+
                         duration++;
                     } else {
-                        // 5秒结束后恢复移动能力
-                        player.setWalkSpeed(0.2f); // 恢复默认移动速度
+                        // 技能结束
+                        player.setWalkSpeed(0.2f);
                         this.cancel();
                         player.setCooldown(Material.DIAMOND_SWORD, 3600);
                         isUltimateActive = false;
+                        affectedEntities.clear(); // 清空受影响的实体列表
                     }
                 }
-            }.runTaskTimer(plugin, 0, 2); // 每2 ticks(0.1秒)运行一次
+
+                // 绘制圆形边界
+                private void drawCircleBoundary(Location center, double radius) {
+                    World world = center.getWorld();
+                    int points = 72; // 圆的精细度
+                    double increment = (2 * Math.PI) / points;
+
+                    for (int i = 0; i < points; i++) {
+                        double angle = i * increment;
+                        double x = center.getX() + (radius * Math.cos(angle));
+                        double z = center.getZ() + (radius * Math.sin(angle));
+
+                        // 在边界位置生成蓝色粒子
+                        world.spawnParticle(
+                                Particle.DUST,
+                                new Location(world, x, center.getY(), z),
+                                1,
+                                0, 0, 0, 0,
+                                new Particle.DustOptions(Color.fromRGB(0, 100, 255), 1.2f)
+                        );
+
+                        // 在边界上方生成半透明粒子
+                        world.spawnParticle(
+                                Particle.DUST,
+                                new Location(world, x, center.getY() + 1.5, z),
+                                1,
+                                0, 0, 0, 0,
+                                new Particle.DustOptions(Color.fromRGB(0, 150, 255), 0.8f)
+                        );
+                    }
+                }
+
+                // 创建水滴形指向箭头
+                private void createDirectionArrow(LivingEntity target, Location center) {
+                    Location targetLoc = target.getLocation();
+                    // 修正方向：从中心（SayakaSaber位置）指向目标
+                    Vector direction = targetLoc.toVector().subtract(center.toVector()).normalize();
+
+                    // 箭头基座位置（目标脚下）
+                    Location arrowBase = targetLoc.clone().add(0, 0.1, 0);
+
+                    // 箭头长度
+                    double arrowLength = 1.5;
+
+                    // 深蓝色颜色定义
+                    Color darkBlue = Color.fromRGB(0, 0, 150);
+
+                    // 水滴形箭头生成
+                    for (double d = 0; d <= arrowLength; d += 0.2) {
+                        // 计算当前位置的比例（0到1）
+                        double progress = d / arrowLength;
+
+                        // 根据位置比例计算粒子大小（尾部大，头部小）
+                        float size = (float)(0.8f * (1.0 - progress * 0.7));
+
+                        // 计算当前位置（从基座向方向延伸）
+                        Location particleLoc = arrowBase.clone().add(direction.clone().multiply(-d));
+
+                        // 生成粒子
+                        target.getWorld().spawnParticle(
+                                Particle.DUST,
+                                particleLoc,
+                                1,
+                                0, 0, 0, 0,
+                                new Particle.DustOptions(darkBlue, size)
+                        );
+
+                        // 在尾部添加更多粒子形成粗尾效果
+                        if (progress < 0.3) {
+                            // 在尾部周围生成环形粒子
+                            for (int i = 0; i < 3; i++) {
+                                double angle = i * 120;
+                                Vector offset = direction.clone()
+                                        .rotateAroundY(Math.toRadians(90))
+                                        .multiply(0.15 * (1.0 - progress))
+                                        .rotateAroundY(Math.toRadians(angle));
+
+                                target.getWorld().spawnParticle(
+                                        Particle.DUST,
+                                        particleLoc.clone().add(offset),
+                                        1,
+                                        0, 0, 0, 0,
+                                        new Particle.DustOptions(darkBlue, size * 0.8f)
+                                );
+                            }
+                        }
+                    }
+
+                    // 在目标脚下生成圆形标记（深蓝色）
+                    for (int i = 0; i < 360; i += 45) {
+                        double rad = Math.toRadians(i);
+                        double x = Math.cos(rad) * 0.5;
+                        double z = Math.sin(rad) * 0.5;
+
+                        target.getWorld().spawnParticle(
+                                Particle.DUST,
+                                arrowBase.clone().add(x, 0, z),
+                                1,
+                                0, 0, 0, 0,
+                                new Particle.DustOptions(darkBlue, 0.6f)
+                        );
+                    }
+                }
+
+            }.runTaskTimer(plugin, 0, 2);
 
             return true;
         }
