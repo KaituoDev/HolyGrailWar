@@ -57,7 +57,7 @@ public class SayakaSaber extends CharacterBase {
         private org.bukkit.event.Listener blackTideListener;
 
         public BlackTideSkill(JavaPlugin plugin, Player player, int manaCost) {
-            super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 0, manaCost);
+            super(plugin, player, Material.DIAMOND_SWORD, BLACK_TIDE_SKILL_NAME, 3600, manaCost);
 
             blackTideListener = new org.bukkit.event.Listener() {
                 @org.bukkit.event.EventHandler
