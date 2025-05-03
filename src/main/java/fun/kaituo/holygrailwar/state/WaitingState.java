@@ -88,6 +88,7 @@ public class WaitingState implements GameState, Listener {
 
     @Override
     public void enter() {
+        HolyGrailWar.disableInvulnerabilityTicks(); // 禁用所有生物的无敌时间
         for (Player p : game.getPlayers()) {
             addPlayer(p);
         }
@@ -112,6 +113,7 @@ public class WaitingState implements GameState, Listener {
         p.getInventory().addItem(Misc.getMenu());
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, -1, 4, false, false));
         p.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, -1, 0, false, false));
+
         p.teleport(game.getLoc("lobby"));
     }
 

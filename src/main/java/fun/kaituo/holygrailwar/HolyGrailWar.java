@@ -63,6 +63,26 @@ public class HolyGrailWar extends Game {
             playerCharacters.remove(player.getUniqueId());
         }
     }
+    // 禁用所有实体的无敌时间
+    // 禁用所有生物的无敌时间
+    public static void disableInvulnerabilityTicks() {
+        Bukkit.getWorlds().forEach(world -> {
+            world.getLivingEntities().forEach(entity -> { // 使用 getLivingEntities() 而不是 getEntities()
+                entity.setMaximumNoDamageTicks(0); // 设置无敌时间为0
+                entity.setNoDamageTicks(0); // 立即生效
+            });
+        });
+    }
+
+    // 恢复默认无敌时间（默认值：10 ticks = 0.5s）
+    public static void restoreDefaultInvulnerabilityTicks() {
+        Bukkit.getWorlds().forEach(world -> {
+            world.getLivingEntities().forEach(entity -> { // 只对 LivingEntity 生效
+                entity.setMaximumNoDamageTicks(10); // 默认值
+                entity.setNoDamageTicks(0); // 立即生效
+            });
+        });
+    }
 
     private void initStates(){
         WaitingState.INST.init();
@@ -126,6 +146,7 @@ public class HolyGrailWar extends Game {
     }
 
     public void onDisable() {
+        restoreDefaultInvulnerabilityTicks(); // 恢复默认无敌时间
         for (Player player : getPlayers()) {
             player.setCooldown(Material.DIAMOND_SWORD, 0);
             player.setCooldown(Material.GLOW_INK_SAC, 0);

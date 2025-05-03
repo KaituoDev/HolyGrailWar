@@ -9,11 +9,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
@@ -37,6 +39,7 @@ public class FightState implements GameState, Listener {
 
     @Override
     public void enter() {
+        HolyGrailWar.disableInvulnerabilityTicks(); // 禁用所有生物的无敌时间
         // 重置抽取记录，确保新一局游戏可以重新抽取
         isGameOver = false;
         DrawCareerClass.getInstance().resetDrawnCharactersAndClasses();
@@ -91,6 +94,14 @@ public class FightState implements GameState, Listener {
             return;
         }
         assignCareer(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if (event.getEntity() instanceof LivingEntity) { // 仅对 LivingEntity 生效
+            LivingEntity livingEntity = (LivingEntity) event.getEntity();
+            livingEntity.setMaximumNoDamageTicks(0); // 禁用新生物的无敌时间
+        }
     }
 
     private void assignCareer(Player player) {
