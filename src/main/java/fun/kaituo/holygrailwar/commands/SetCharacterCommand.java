@@ -1,5 +1,7 @@
 package fun.kaituo.holygrailwar.commands;
 
+import fun.kaituo.gameutils.GameUtils;
+import fun.kaituo.gameutils.command.GameUtilsCommand;
 import fun.kaituo.gameutils.util.Misc;
 import fun.kaituo.holygrailwar.HolyGrailWar;
 import fun.kaituo.holygrailwar.characters.CharacterBase;
@@ -95,7 +97,7 @@ public class SetCharacterCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 1) {
             // 返回所有角色名称的补全
-            return Misc.getMatchingCompletions(args[0],
+            return GameUtilsCommand.getMatchingCompletions(args[0],
                     characterSystem.getAllCharacters().stream()
                             .map(DrawCareerClass.GameCharacter::getName)
                             .collect(Collectors.toList()));
@@ -111,7 +113,7 @@ public class SetCharacterCommand implements CommandExecutor, TabCompleter {
 
             if (targetCharacter != null) {
                 // 返回该角色可用职阶的补全
-                return Misc.getMatchingCompletions(args[1],
+                return GameUtilsCommand.getMatchingCompletions(args[1],
                         targetCharacter.getAvailableClasses().stream()
                                 .map(Enum::name)
                                 .map(String::toLowerCase)

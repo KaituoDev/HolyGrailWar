@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 
 public class KyokoCaster extends CharacterBase {
     public KyokoCaster(Player player) {
-        super(player, "佐仓杏子", DrawCareerClass.ClassType.CASTER, 0, 0, 0);
+        super(player, "佐仓杏子", DrawCareerClass.ClassType.CASTER, 1, 0, 0);
     }
 
 

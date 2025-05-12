@@ -1,10 +1,12 @@
 package fun.kaituo.holygrailwar.characters.Sayaka;
 
+import fun.kaituo.holygrailwar.HolyGrailWar;
 import fun.kaituo.holygrailwar.characters.CharacterBase;
 import fun.kaituo.holygrailwar.utils.AbstractSkill;
 import fun.kaituo.holygrailwar.utils.DrawCareerClass;
 import org.bukkit.*;
 import org.bukkit.entity.*;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,7 +16,9 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.bukkit.Bukkit.getPlayer;
 
@@ -24,32 +28,112 @@ public class SayakaSaber extends CharacterBase {
     private final BlackTideSkill blackTideSkill;
     private static final String SKILL_NAME = "迷惘裹挟之斩";
     private static final String BLACK_TIDE_SKILL_NAME = "黑潮蚀岸之声";
-    private org.bukkit.event.Listener listener; // 保存监听器引用
+    private org.bukkit.event.Listener listener;
     private boolean isUltimateActive = false;
 
+    // 新增的回复系统字段
+    private final Map<Integer, Double> activeHeals = new HashMap<>(); // 存储活跃的回复任务<任务ID, 总回复量>
+    private double healingThisSecond = 0; // 当前秒内已回复的生命值
+    private long lastHealingSecond = 0; // 上次回复的时间戳(秒)
+    private static final double MAX_HEAL_PER_SECOND = 20.0; // 每秒最大回复量
 
     public SayakaSaber(Player player) {
         this(player, (JavaPlugin) Bukkit.getPluginManager().getPlugin("HolyGrailWar"));
     }
 
     public SayakaSaber(Player player, JavaPlugin plugin) {
-        super(player, "美树沙耶香", DrawCareerClass.ClassType.SABER, 2400, 1, 0);
-        player.setExp(1.0f); // 初始满魔力
+        super(player, "美樹沙耶香", DrawCareerClass.ClassType.SABER, 2400, 1, 0);
+        player.setExp(1.0f);
         player.setLevel(0);
-        this.skillCycle = new SkillCycle(plugin, player, 100);
-        this.blackTideSkill = new BlackTideSkill(plugin, player, 600);
+        this.skillCycle = new SkillCycle(plugin, player, 200);
+        this.blackTideSkill = new BlackTideSkill(plugin, player, 1000);
         addSkill(this.skillCycle);
         addSkill(this.blackTideSkill);
+
+        // 注册伤害监听器
+        plugin.getServer().getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler
+            public void onDamage(EntityDamageEvent event) {
+                if (event.getEntity().equals(player)) {
+                    handleDamage(event.getDamage());
+                }
+            }
+        }, plugin);
+
+        // 启动每秒回复检测
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                applyHealingOverTime();
+            }
+        }.runTaskTimer(plugin, 0, 1); // 每tick检测一次
     }
 
     @Override
     public void cleanup() {
-        super.cleanup(); // 调用父类清理方法
+        super.cleanup();
         if (listener != null) {
             PlayerInteractEvent.getHandlerList().unregister(listener);
         }
         player.setWalkSpeed(0.2f);
-        isUltimateActive = false; // 重置锁定状态
+        isUltimateActive = false;
+        activeHeals.clear();
+        healingThisSecond = 0;
+    }
+
+    // 处理受到的伤害
+    private void handleDamage(double damage) {
+        if (isUltimateActive) return;
+
+        double healAmount = damage * 0.5; // 计算回复总量
+        final int taskId = (int) System.currentTimeMillis(); // 生成唯一任务ID
+
+        // 将回复任务加入活跃列表
+        activeHeals.put(taskId, healAmount);
+
+        // 3秒后移除这个回复任务
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                activeHeals.remove(taskId);
+            }
+        }.runTaskLater(HolyGrailWar.inst(), 60); // 3秒 = 60ticks
+    }
+
+    // 应用随时间回复
+    private void applyHealingOverTime() {
+        if (activeHeals.isEmpty()) return;
+        if (player.isDead()) return;
+
+        long currentSecond = System.currentTimeMillis() / 1000;
+
+        // 如果进入了新的一秒，重置计数器
+        if (currentSecond != lastHealingSecond) {
+            healingThisSecond = 0;
+            lastHealingSecond = currentSecond;
+        }
+
+        // 计算所有活跃回复任务的总待回复量
+        double totalPendingHeal = activeHeals.values().stream().mapToDouble(Double::doubleValue).sum();
+        if (totalPendingHeal <= 0) return;
+
+        // 计算本次可以回复的量(不超过每秒上限的1/20，因为这是每tick执行)
+        double maxHealThisTick = Math.min(MAX_HEAL_PER_SECOND / 20.0, MAX_HEAL_PER_SECOND - healingThisSecond);
+        double healThisTick = Math.min(totalPendingHeal * 0.05, maxHealThisTick); // 均匀分配回复量
+
+        if (healThisTick <= 0) return;
+
+        // 应用回复
+        double newHealth = Math.min(player.getHealth() + healThisTick, player.getMaxHealth());
+        player.setHealth(newHealth);
+
+        // 更新计数器
+        healingThisSecond += healThisTick;
+
+        // 按比例减少每个活跃回复任务的待回复量
+        double ratio = healThisTick / totalPendingHeal;
+        activeHeals.replaceAll((id, amount) -> amount * (1 - ratio));
+
 
     }
 
@@ -73,11 +157,13 @@ public class SayakaSaber extends CharacterBase {
         @Override
         protected boolean onTrigger(PlayerInteractEvent event) {
             isUltimateActive = true;
+            final Location initialLocation = player.getLocation().clone(); // 保存初始位置
+
 
             // 启动技能效果
             new BukkitRunnable() {
                 int duration = 0;
-                final Location center = player.getLocation();
+                final Location center = initialLocation.clone(); // 使用初始位置作为中心点
                 final double radius = 20;
                 final double height = 5;
                 int waterDropCount = 0;
@@ -85,6 +171,10 @@ public class SayakaSaber extends CharacterBase {
 
                 @Override
                 public void run() {
+                    // 每tick固定玩家位置，防止被移动
+                    if (!player.getLocation().equals(initialLocation)) {
+                        player.teleport(initialLocation);
+                    }
                     if (duration == 0) {
                         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 4));
                         player.setWalkSpeed(0);
@@ -105,8 +195,10 @@ public class SayakaSaber extends CharacterBase {
                             if (entity instanceof LivingEntity && !(entity instanceof ArmorStand) && !entity.equals(player)) {
                                 LivingEntity livingEntity = (LivingEntity) entity;
 
-                                // 伤害效果
-                                livingEntity.damage(2.5, player);
+                                // 伤害效果 - 修改为不会击退
+                                livingEntity.damage(2, player);
+
+
 
                                 // 标记敌人并创建箭头
                                 if (!affectedEntities.contains(entity)) {
@@ -125,9 +217,9 @@ public class SayakaSaber extends CharacterBase {
                                             true
                                     ));
                                 }
+
                             }
                         }
-
                         // 清理已离开范围的实体
                         affectedEntities.removeIf(e ->
                                 e.getLocation().distance(center) > radius ||
@@ -330,7 +422,7 @@ public class SayakaSaber extends CharacterBase {
             Vector direction = eyeLoc.getDirection().setY(0).normalize();
 
             // 扇形参数
-            double radius = 5;
+            double radius = 8;
             double angle = 120;
             double halfAngleRad = Math.toRadians(angle / 2);
 
@@ -763,9 +855,9 @@ public class SayakaSaber extends CharacterBase {
             new BukkitRunnable() {
                 double angle = 0;
                 final int totalSteps = 24; // 增加总帧数以便更平滑的加速
-                final double maxSpeed = 50.0; // 最大角度速度（度/ticks）
+                final double maxSpeed = 100; // 最大角度速度（度/ticks）
                 final double acceleration = 1.5; // 加速度
-                double currentSpeed = 5.0; // 初始速度（慢速开始）
+                double currentSpeed = 15; // 初始速度（慢速开始）
                 final List<Entity> hitEntities = new ArrayList<>(); // 已命中实体列表
 
                 @Override
@@ -853,14 +945,6 @@ public class SayakaSaber extends CharacterBase {
                                             1.0f + (float)(currentSpeed / maxSpeed * 0.5f),
                                             0.7f
                                     );
-
-                                    // 击退效果
-                                    Vector knockback = entityLoc.toVector()
-                                            .subtract(center.toVector())
-                                            .setY(0.3)
-                                            .normalize()
-                                            .multiply(1.5);
-                                    entity.setVelocity(knockback);
                                 }
                             }
                         }

@@ -45,7 +45,7 @@ public abstract class CharacterBase {
         startManaRegenTask();
     }
 
-    private void updateManaBar() {
+    protected void updateManaBar() {
         if (player == null || !player.isOnline()) return;
 
         // 设置经验条显示魔力百分比 (0-1)

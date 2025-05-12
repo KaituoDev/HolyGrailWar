@@ -26,8 +26,7 @@ public class HolyGrailWar extends Game {
 
 
     public final Set<UUID> playerIds = new HashSet<>();
-    @Getter
-    private static final Location LobbyLocation = new Location(GameUtils.inst().getMainWorld(), 2000.5, 100, 4000.5);
+
 
 
     public Set<Player> getPlayers() {
@@ -92,9 +91,9 @@ public class HolyGrailWar extends Game {
 
     @Override
     public void addPlayer(Player p) {
-        p.setBedSpawnLocation(LobbyLocation, true);
+        p.setBedSpawnLocation(gameTeleportLocation, true);
         playerIds.add(p.getUniqueId());
-        p.teleport(LobbyLocation);
+        p.teleport(gameTeleportLocation);
 
         // 初始化经验条
         p.setExp(0);
