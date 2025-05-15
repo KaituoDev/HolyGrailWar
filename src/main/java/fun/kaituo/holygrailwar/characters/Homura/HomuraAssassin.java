@@ -44,6 +44,7 @@ public class HomuraAssassin extends CharacterBase implements Listener {
     private final Set<BukkitRunnable> pausedTasks = new HashSet<>();
     private final Map<UUID, Projectile> frozenProjectiles = new HashMap<>();
     private final Map<UUID, Vector> projectileDirections = new HashMap<>(); // 新增：记录投射物方向
+    private BukkitTask timeStopManaTask;
 
     private static final String RIFLE_NAME = "89式突击步枪";
     private static final int RIFLE_MAX_AMMO = 30;
@@ -82,13 +83,13 @@ public class HomuraAssassin extends CharacterBase implements Listener {
             GRENADE_NAME
     };
 
-    private final Map<UUID, TNTPrimed> frozenGrenades = new HashMap<>();
+    private final Map<UUID, WindCharge> frozenGrenades = new HashMap<>();
 
     public HomuraAssassin(Player player) {
-        super(player, "晓美焰", DrawCareerClass.ClassType.ASSASSIN, 1, 0, 0);
+        super(player, "晓美焰", DrawCareerClass.ClassType.ASSASSIN, 20*15, 1, 20*5);
         this.plugin = HolyGrailWar.inst();
         this.linkedChestLocation = HolyGrailWar.inst().getLoc("homura_assassin_chest");
-        this.timeStopSkill = new TimeStopSkill(plugin, player, 0); // 时间停止不消耗魔力
+        this.timeStopSkill = new TimeStopSkill(plugin, player, 10); // 时间停止不消耗魔力
 
         if (this.linkedChestLocation == null) {
             this.linkedChestLocation = player.getLocation();
@@ -387,6 +388,9 @@ public class HomuraAssassin extends CharacterBase implements Listener {
         frozenProjectiles.clear();
         projectileDirections.clear();
 
+
+
+
         // 记录所有实体的动量和位置
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
@@ -455,6 +459,7 @@ public class HomuraAssassin extends CharacterBase implements Listener {
                     this.cancel();
                     return;
                 }
+                World world = player.getWorld();
 
                 // 保持实体位置固定
                 for (UUID uuid : frozenEntities) {
@@ -476,30 +481,45 @@ public class HomuraAssassin extends CharacterBase implements Listener {
                         // No need to maintain direction during time stop
                     }
                 }
-                // 记录所有手榴弹的状态
-                for (World world : Bukkit.getWorlds()) {
-                    for (Entity entity : world.getEntities()) {
-                        if (entity instanceof TNTPrimed) {
-                            TNTPrimed grenade = (TNTPrimed) entity;
-                            frozenGrenades.put(grenade.getUniqueId(), grenade);
-                            // 记录动量和位置
-                            Vector velocity = grenade.getVelocity();
-                            entityMomentums.put(grenade.getUniqueId(), velocity.clone());
-                            entityLocations.put(grenade.getUniqueId(), grenade.getLocation().clone());
+                for (Entity entity : world.getEntities()) {
+                    if (entity instanceof WindCharge) { // 改为检测WindCharge而不是TNTPrimed
+                        WindCharge grenade = (WindCharge) entity;
+                        frozenGrenades.put(grenade.getUniqueId(), grenade);
+                        Vector velocity = grenade.getVelocity();
+                        entityMomentums.put(grenade.getUniqueId(), velocity.clone());
+                        entityLocations.put(grenade.getUniqueId(), grenade.getLocation().clone());
 
-                            // 冻结手榴弹
-                            grenade.setGravity(false);
-                            grenade.setVelocity(new Vector(0, 0, 0));
-                            grenade.setFuseTicks(Integer.MAX_VALUE);
-                        }
+                        grenade.setGravity(false);
+                        grenade.setVelocity(new Vector(0, 0, 0));
                     }
                 }
             }
         }.runTaskTimer(plugin, 0, 1);
+        timeStopManaTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                CharacterBase character = HolyGrailWar.inst().getPlayerCharacter(player);
+                if (character == null || !character.hasEnoughMana(1)) {
+                    // Mana不足，结束时停
+                    endTimeStop();
+                    player.sendMessage("§c魔力不足，时间恢复流动");
+                    this.cancel();
+                    return;
+                }
+
+                // 消耗2点mana
+                character.consumeMana(2);
+            }
+        }.runTaskTimer(plugin, 0, 1); // 每tick执行一次
     }
 
     private void endTimeStop() {
         isTimeStopped = false;
+        // 取消mana消耗任务
+        if (timeStopManaTask != null && !timeStopManaTask.isCancelled()) {
+            timeStopManaTask.cancel();
+            timeStopManaTask = null;
+        }
 
         // 恢复实体状态
         for (UUID uuid : frozenEntities) {
@@ -523,7 +543,6 @@ public class HomuraAssassin extends CharacterBase implements Listener {
         }
 
         // 恢复投射物状态
-        // 恢复投射物状态
         for (Map.Entry<UUID, Projectile> entry : frozenProjectiles.entrySet()) {
             Projectile projectile = entry.getValue();
             if (projectile != null && projectile.isValid()) {
@@ -543,6 +562,45 @@ public class HomuraAssassin extends CharacterBase implements Listener {
             }
         }
 
+        // 恢复风弹状态并应用抛物线运动
+        for (Map.Entry<UUID, WindCharge> entry : frozenGrenades.entrySet()) {
+            WindCharge grenade = entry.getValue();
+            if (grenade != null && grenade.isValid()) {
+                Vector originalVelocity = entityMomentums.get(entry.getKey());
+                Location originalLocation = entityLocations.get(entry.getKey());
+
+                if (originalVelocity != null && originalLocation != null) {
+                    grenade.teleport(originalLocation);
+                    grenade.setGravity(false); // 禁用原版重力，手动模拟
+
+                    // 手动模拟抛物线运动
+                    Vector velocity = originalVelocity.clone();
+                    Vector gravity = new Vector(0, -0.05, 0);
+
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            if (!grenade.isValid()) {
+                                this.cancel();
+                                return;
+                            }
+
+                            // 更新速度（应用重力）
+                            velocity.add(gravity);
+                            // 更新位置
+                            grenade.setVelocity(velocity);
+
+                            // 检查是否击中地面（手动检测）
+                            if (grenade.getLocation().getY() <= grenade.getWorld().getMinHeight()) {
+                                explodeGrenade(grenade);
+                                this.cancel();
+                                return;
+                            }
+                        }
+                    }.runTaskTimer(plugin, 0, 1);
+                }
+            }
+        }
 
         // 恢复被暂停的任务
         for (BukkitRunnable task : pausedTasks) {
@@ -558,27 +616,6 @@ public class HomuraAssassin extends CharacterBase implements Listener {
                 victim.damage(event.getDamage(), player);
             }
         }
-        // 恢复手榴弹状态
-        for (Map.Entry<UUID, TNTPrimed> entry : frozenGrenades.entrySet()) {
-            TNTPrimed grenade = entry.getValue();
-            if (grenade != null && grenade.isValid()) {
-                Vector originalVelocity = entityMomentums.get(entry.getKey());
-                Location originalLocation = entityLocations.get(entry.getKey());
-
-                if (originalVelocity != null && originalLocation != null) {
-                    // 先恢复位置
-                    grenade.teleport(originalLocation);
-                    // 恢复重力
-                    grenade.setGravity(true);
-                    // 恢复动量
-                    grenade.setVelocity(originalVelocity);
-                    // 恢复引信时间 (60 ticks = 3秒)
-                    grenade.setFuseTicks(60);
-                }
-            }
-        }
-        frozenGrenades.clear();
-
 
         // 视觉效果
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_PLACE, 1.0f, 0.5f);
@@ -592,6 +629,7 @@ public class HomuraAssassin extends CharacterBase implements Listener {
         pausedTasks.clear();
         frozenProjectiles.clear();
         projectileDirections.clear();
+        frozenGrenades.clear();
     }
 
 
@@ -620,7 +658,19 @@ public class HomuraAssassin extends CharacterBase implements Listener {
             return;
         }
 
-        // 对使用者发射的投射物，延迟1 tick后冻结
+        // 如果是风弹，立即冻结
+        if (event.getEntity() instanceof WindCharge) {
+            WindCharge grenade = (WindCharge) event.getEntity();
+            frozenGrenades.put(grenade.getUniqueId(), grenade);
+            entityMomentums.put(grenade.getUniqueId(), grenade.getVelocity().clone());
+            entityLocations.put(grenade.getUniqueId(), grenade.getLocation().clone());
+
+            grenade.setVelocity(new Vector(0, 0, 0));
+            grenade.setGravity(false);
+            return;
+        }
+
+        // 其他投射物延迟1 tick后冻结
         Projectile projectile = event.getEntity();
         new BukkitRunnable() {
             @Override
@@ -634,7 +684,7 @@ public class HomuraAssassin extends CharacterBase implements Listener {
                 projectile.setVelocity(new Vector(0, 0, 0));
                 projectile.setGravity(false);
             }
-        }.runTaskLater(plugin, 1); // 延迟1 tick执行
+        }.runTaskLater(plugin, 1);
     }
 
     private void shootRifle() {
@@ -999,43 +1049,83 @@ public class HomuraAssassin extends CharacterBase implements Listener {
             }
         }
     }
+    // 修改手榴弹发射方法
     private void launchGrenade() {
         Location eyeLoc = player.getEyeLocation();
         Vector direction = eyeLoc.getDirection().normalize();
 
-        TNTPrimed grenade = player.getWorld().spawn(eyeLoc, TNTPrimed.class);
+        // 创建风弹（Wind Charge）
+        WindCharge grenade = player.getWorld().spawn(eyeLoc, WindCharge.class);
+        grenade.setShooter(player);
+
+        // 初始速度
         Vector velocity = direction.multiply(1.5);
         grenade.setVelocity(velocity);
-        grenade.setFuseTicks(60);
-        grenade.setIsIncendiary(false);
 
-        // 如果时停中，立即冻结新手榴弹
-        if (isTimeStopped) {
-            frozenGrenades.put(grenade.getUniqueId(), grenade);
-            entityMomentums.put(grenade.getUniqueId(), velocity.clone());
-            entityLocations.put(grenade.getUniqueId(), grenade.getLocation().clone());
+        // 如果不是时停状态，手动模拟抛物线运动
+        if (!isTimeStopped) {
+            grenade.setGravity(false); // 禁用原版重力，手动模拟
+            Vector gravity = new Vector(0, -0.05, 0);
 
-            grenade.setGravity(false);
-            grenade.setVelocity(new Vector(0, 0, 0));
-            grenade.setFuseTicks(Integer.MAX_VALUE);
+            // 手动模拟抛物线运动
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!grenade.isValid()) {
+                        this.cancel();
+                        return;
+                    }
+
+                    // 更新速度（应用重力）
+                    velocity.add(gravity);
+                    // 更新位置
+                    grenade.setVelocity(velocity);
+
+                    // 检查是否击中地面（手动检测）
+                    if (grenade.getLocation().getY() <= grenade.getWorld().getMinHeight()) {
+                        explodeGrenade(grenade);
+                        this.cancel();
+                        return;
+                    }
+                }
+            }.runTaskTimer(plugin, 0, 1);
         }
 
-
+        // 监听风弹碰撞事件
         Bukkit.getPluginManager().registerEvents(new Listener() {
             @EventHandler
-            public void onEntityExplode(EntityExplodeEvent event) {
+            public void onProjectileHit(ProjectileHitEvent event) {
                 if (event.getEntity().equals(grenade)) {
-                    event.blockList().clear();
-                    event.getEntity().getWorld().playSound(
-                            event.getLocation(),
-                            Sound.ENTITY_GENERIC_EXPLODE,
-                            4.0f,
-                            1.0f
-                    );
-                    EntityExplodeEvent.getHandlerList().unregister(this);
+                    ProjectileHitEvent.getHandlerList().unregister(this);
+                    explodeGrenade(grenade);
                 }
             }
         }, plugin);
+    }
+
+    // 爆炸逻辑封装
+    private void explodeGrenade(WindCharge grenade) {
+        if (!grenade.isValid()) return;
+
+        // 产生等级4的爆炸（不破坏方块）
+        grenade.getWorld().createExplosion(
+                grenade.getLocation(),
+                4.0f,
+                false,
+                false,
+                player
+        );
+
+        // 播放爆炸音效
+        grenade.getWorld().playSound(
+                grenade.getLocation(),
+                Sound.ENTITY_GENERIC_EXPLODE,
+                4.0f,
+                1.0f
+        );
+
+        // 移除风弹
+        grenade.remove();
     }
     @Override
     public void cleanup() {
@@ -1050,6 +1140,9 @@ public class HomuraAssassin extends CharacterBase implements Listener {
         PlayerInteractEvent.getHandlerList().unregister(this);
         EntityDamageEvent.getHandlerList().unregister(this);
         PlayerDropItemEvent.getHandlerList().unregister(this);
+        if (timeStopManaTask != null && !timeStopManaTask.isCancelled()) {
+            timeStopManaTask.cancel();
+        }
     }
 
     private class TimeStopSkill extends AbstractSkill {
@@ -1063,8 +1156,15 @@ public class HomuraAssassin extends CharacterBase implements Listener {
                 endTimeStop();
                 player.sendMessage("§b时间恢复流动");
             } else {
-                startTimeStop();
-                player.sendMessage("§b时间停止！");
+                // 检查是否有足够mana启动时停
+                CharacterBase character = HolyGrailWar.inst().getPlayerCharacter(player);
+                if (character != null && character.hasEnoughMana(1)) {
+                    startTimeStop();
+                    player.sendMessage("§b时间停止！");
+                } else {
+                    player.sendMessage("§c魔力不足，无法停止时间");
+                    return false;
+                }
             }
             return true;
         }
