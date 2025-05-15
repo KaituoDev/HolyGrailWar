@@ -37,6 +37,7 @@ public class FightState implements GameState, Listener {
         game = HolyGrailWar.inst();
     }
 
+
     @Override
     public void enter() {
         HolyGrailWar.disableInvulnerabilityTicks(); // 禁用所有生物的无敌时间

@@ -8,11 +8,13 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -56,6 +58,14 @@ public class WaitingState implements GameState, Listener {
         Bukkit.getPluginManager().registerEvents(assassinSign, game);
     }
 
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if (event.getEntity() instanceof LivingEntity) {
+            LivingEntity entity = (LivingEntity) event.getEntity();
+            entity.setMaximumNoDamageTicks(0);
+            entity.setNoDamageTicks(0);
+        }
+    }
 
     @EventHandler
     public void onPlayerClickStartButton(PlayerInteractEvent event) {
