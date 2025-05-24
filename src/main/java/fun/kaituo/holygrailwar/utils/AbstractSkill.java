@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashSet;
 import java.util.Set;
 
+
 public abstract class AbstractSkill {
     protected final JavaPlugin plugin;
     protected final Player player;

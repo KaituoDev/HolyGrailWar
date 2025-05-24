@@ -79,6 +79,8 @@ public class SayakaSaber extends CharacterBase {
         isUltimateActive = false;
         activeHeals.clear();
         healingThisSecond = 0;
+        player.setCooldown(Material.GLOW_INK_SAC, 0);
+        player.setCooldown(Material.DIAMOND_SWORD, 0);
     }
 
     // 处理受到的伤害

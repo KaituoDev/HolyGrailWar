@@ -60,6 +60,7 @@ public class KyokoLancer extends CharacterBase implements Listener {
     private boolean isLockingView = false;
     private float lockedYaw;
     private float lockedPitch;
+    private boolean isUsingPillarSkill = false;
 
     private static final int FLAME_SKILL_MANA_COST = 0; // 魔力消耗
     private static final int FLAME_SKILL_COOLDOWN = 20 ; //冷却
@@ -504,7 +505,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
 
     // 剑形态第一段攻击
     private void executeSwordCombo1Attack(Player player) {
-        player.sendMessage("§a执行剑形态第一段攻击：圆环斩击");
 
         // 创建圆形斩击特效（只在外圈）
         createCircularSlashEffect(player.getLocation(), 4, 8); // 只显示4-8格范围的圆环特效
@@ -624,7 +624,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
 
     // 剑形态第二段攻击
     private void executeSwordCombo2Attack(Player player) {
-        player.sendMessage("§a执行剑形态第二段攻击：链枪缠绕");
 
         // 获取玩家前方直线上的第一个实体
         Location startLoc = player.getEyeLocation();
@@ -756,7 +755,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
 
     // 修改后的剑形态第三段攻击
     private void executeSwordCombo3Attack(Player player) {
-        player.sendMessage("§a执行剑形态第三段攻击：烈焰扇形斩");
 
         // 创建扇形斩击特效（120度范围）
         createFanShapedEffect(player.getLocation(), player.getLocation().getYaw(), 6, 120);
@@ -926,7 +924,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
     }
 
     private void executeCombo1Attack(Player player) {
-        player.sendMessage("§a执行第一段攻击：突刺斩击");
 
         // 获取玩家朝向的方向向量
         org.bukkit.util.Vector direction = player.getLocation().getDirection().setY(0).normalize();
@@ -1128,7 +1125,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
     }
 
     private void executeCombo2Attack(Player player) {
-        player.sendMessage("§a执行第二段攻击：半月斩");
 
         new BukkitRunnable() {
             int ticks = 0;
@@ -1282,7 +1278,6 @@ public class KyokoLancer extends CharacterBase implements Listener {
     }
 
     private void executeCombo3Attack(Player player) {
-        player.sendMessage("§a执行第三段攻击：上挑击飞");
 
         new BukkitRunnable() {
             int ticks = 0;
@@ -1429,6 +1424,9 @@ public class KyokoLancer extends CharacterBase implements Listener {
         if (character == null || !character.hasEnoughMana(500)) {
             return;
         }
+        if (player.hasCooldown(Material.NETHER_BRICK_WALL)) {
+            return;
+        }
 
         // 执行技能
         executePillarSkill(player);
@@ -1438,9 +1436,9 @@ public class KyokoLancer extends CharacterBase implements Listener {
     }
 
     private void executePillarSkill(Player player) {
+        isUsingPillarSkill = true;
         // 锁定玩家移动和跳跃
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20, 255, false, false));
-        player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 20, 128, false, false));
 
         // 创建准备区域特效
         createPillarPreparationEffect(player.getLocation());
@@ -1450,6 +1448,7 @@ public class KyokoLancer extends CharacterBase implements Listener {
             @Override
             public void run() {
                 executePillarJudgmentEffect(player.getLocation());
+                isUsingPillarSkill = false;
             }
         }.runTaskLater(HolyGrailWar.inst(), 20);
     }
@@ -1972,8 +1971,9 @@ public class KyokoLancer extends CharacterBase implements Listener {
 
     @EventHandler
     public void onPlayerJump(PlayerToggleFlightEvent event) {
-        if (event.getPlayer().equals(this.player) ){
-            if (isLockingView) {
+        if (event.getPlayer().equals(this.player)) {
+            // 检查是否在锁定视角状态(包括技能准备阶段)或者正在使用断罪之刑柱技能
+            if (isLockingView || isUsingPillarSkill) {
                 event.setCancelled(true);
             }
         }
@@ -2040,10 +2040,15 @@ public class KyokoLancer extends CharacterBase implements Listener {
     @Override
     public void cleanup() {
         super.cleanup();
+        HandlerList.unregisterAll(this); // 注销所有事件监听器
         if (player != null) {
             player.setCooldown(Material.STRING, 0);
             isLockingView = false;
             player.setAllowFlight(false);
+            player.setCooldown(Material.IRON_SWORD, 0);
+            player.setCooldown(Material.TRIDENT, 0);
+            player.setCooldown(Material.NETHER_BRICK_WALL,  0);
+            player.setCooldown(Material.STRING,0);
         }
     }
 }

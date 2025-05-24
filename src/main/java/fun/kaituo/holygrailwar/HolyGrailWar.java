@@ -56,10 +56,15 @@ public class HolyGrailWar extends Game {
 
     public void removePlayerCharacter(Player player) {
         if (playerCharacters.containsKey(player.getUniqueId())) {
-            CharacterBase character = playerCharacters.get(player.getUniqueId());
-            character.cleanup(); // 清理监听器
-            character.clearInventory();
-            playerCharacters.remove(player.getUniqueId());
+            try {
+                CharacterBase character = playerCharacters.get(player.getUniqueId());
+                character.cleanup(); // 清理监听器
+                character.clearInventory();
+            } catch (Exception e) {
+                Bukkit.getLogger().warning("Error cleaning up character for player " + player.getName());
+            } finally {
+                playerCharacters.remove(player.getUniqueId());
+            }
         }
     }
     // 禁用所有实体的无敌时间
